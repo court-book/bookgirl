@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Bookgirl výběr</title>
+  <style>
+    body {
+      background: #111;
+      color: white;
+      text-align: center;
+      font-family: Arial;
+    }
+
+    h1 {
+      margin-top: 20px;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 40px;
+    }
+
+    .item {
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .item:hover {
+      transform: scale(1.05);
+    }
+
+    img {
+      width: 220px;
+      height: 300px;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+
+    .selected {
+      box-shadow: 0 0 20px gold;
+      transform: scale(1.08);
+    }
+
+    .bracket {
+      margin-top: 30px;
+    }
+
+    .round {
+      margin-bottom: 20px;
+    }
+
+    .match {
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Koho radši?</h1>
+
+<div class="container">
+  <div class="item" id="item0" onclick="choose(0)">
+    <img id="img0">
+    <p id="name0"></p>
+  </div>
+
+  <div class="item" id="item1" onclick="choose(1)">
+    <img id="img1">
+    <p id="name1"></p>
+  </div>
+</div>
+
+<script>
+const data = [
+  { name: "Aelin", img: "images/Aelin.jpg" },
+  { name: "Amren", img: "images/Amren.jpg" },
+  { name: "Asterin", img: "images/Asterin.jpg" },
+  { name: "Bryce", img: "images/Bryce.jpg" },
+  { name: "Danika", img: "images/Danika.jpg" },
+  { name: "Elain", img: "images/Elain.jpg" },
+  { name: "Elide", img: "images/Elide.jpg" },
+  { name: "Feyre", img: "images/Feyre.jpg" },
+  { name: "Gwyn", img: "images/Gwyn.jpg" },
+  { name: "Hypaxia", img: "images/Hypaxia.jpg" },
+  { name: "Kaltain", img: "images/Kaltain.jpg" },
+  { name: "Lehabah", img: "images/Lehabah.jpg" },
+  { name: "Lidia", img: "images/Lidia.jpg" },
+  { name: "Lysandra", img: "images/Lysandra.jpg" },
+  { name: "Manon", img: "images/Manon.jpg" },
+  { name: "Juniper", img: "images/Juniper.jpg" },
+  { name: "Morrigan", img: "images/Morrigan.jpg" },
+  { name: "Nesryn", img: "images/Nesryn.jpg" },
+  { name: "Nesta", img: "images/Nesta.jpg" },
+  { name: "Paedyn", img: "images/Paedyn.jpg" },
+  { name: "Rhiannon", img: "images/Rhiannon.jpg" },
+  { name: "Saeris", img: "images/Saeris.jpg" },
+  { name: "Violet", img: "images/Violet.jpg" },
+  { name: "Yrene", img: "images/Yrene.jpg" }
+];
+
+let currentRound = [];
+let nextRound = [];
+let currentPair = [];
+
+let history = [];
+let roundNumber = 1;
+
+function shuffle(array) {
+  return array.sort(() => Math.random() - 0.5);
+}
+
+function startTournament() {
+  currentRound = shuffle([...data]);
+  nextRound = [];
+  history = [];
+  roundNumber = 1;
+  nextPair();
+}
+
+function nextPair() {
+  // konec turnaje
+  if (currentRound.length === 1 && nextRound.length === 0) {
+    showWinner(currentRound[0]);
+    return;
+  }
+
+  // konec kola → další kolo
+  if (currentRound.length < 2) {
+    currentRound = nextRound;
+    nextRound = [];
+    roundNumber++;
+    nextPair();
+    return;
+  }
+
+  currentPair = [currentRound.pop(), currentRound.pop()];
+  update();
+}
+
+function update() {
+  document.getElementById("img0").src = currentPair[0].img;
+  document.getElementById("name0").innerText = currentPair[0].name;
+
+  document.getElementById("img1").src = currentPair[1].img;
+  document.getElementById("name1").innerText = currentPair[1].name;
+}
+
+function choose(index) {
+  let winner = currentPair[index];
+
+  history.push({
+    round: roundNumber,
+    player1: currentPair[0].name,
+    player2: currentPair[1].name,
+    winner: winner.name
+  });
+
+  document.getElementById("item" + index).classList.add("selected");
+
+  setTimeout(() => {
+    document.getElementById("item" + index).classList.remove("selected");
+
+    nextRound.push(winner);
+    nextPair();
+  }, 200);
+}
+
+function showWinner(winner) {
+  let grouped = {};
+
+  // pomocná funkce – najde obrázek podle jména
+  function getImg(name) {
+    let found = data.find(p => p.name === name);
+    return found ? found.img : "";
+  }
+
+  // rozdělení podle kol
+  history.forEach(match => {
+    if (!grouped[match.round]) grouped[match.round] = [];
+    grouped[match.round].push(match);
+  });
+
+  let bracketHTML = `
+    <div style="
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      gap:40px;
+      margin-top:30px;
+      flex-wrap:wrap;
+    ">
+  `;
+
+  for (let round in grouped) {
+    bracketHTML += `<div style="text-align:center">`;
+    bracketHTML += `<h3>Kolo ${round}</h3>`;
+
+    grouped[round].forEach(match => {
+      bracketHTML += `
+        <div style="
+          background:#222;
+          padding:10px;
+          margin:10px;
+          border-radius:10px;
+          min-width:140px;
+        ">
+          
+          <div style="display:flex; align-items:center; gap:8px;">
+            <img src="${getImg(match.player1)}" style="width:40px; height:50px; object-fit:cover; border-radius:6px;">
+            <span>${match.player1}</span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px; margin-top:5px;">
+            <img src="${getImg(match.player2)}" style="width:40px; height:50px; object-fit:cover; border-radius:6px;">
+            <span>${match.player2}</span>
+          </div>
+
+          <div style="
+            margin-top:8px;
+            padding:4px;
+            border:2px solid gold;
+            border-radius:6px;
+            color:gold;
+            font-weight:bold;
+            display:flex;
+            align-items:center;
+            gap:6px;
+            justify-content:center;
+          ">
+            <img src="${getImg(match.winner)}" style="width:30px; height:40px; object-fit:cover; border-radius:5px;">
+            👑 ${match.winner}
+          </div>
+
+        </div>
+      `;
+    });
+
+    bracketHTML += `</div>`;
+  }
+
+  bracketHTML += `</div>`;
+
+  document.body.innerHTML = `
+    <h1>👑 HIGH LADY WINNER 👑</h1>
+    <img src="${winner.img}" style="width:250px; border-radius:15px;">
+    <h2>${winner.name}</h2>
+    ${bracketHTML}
+    <br>
+    <button onclick="location.reload()">Hrát znovu</button>
+  `;
+}
+startTournament();
+</script>
+
+</body>
+</html>
