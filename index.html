@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Bookgirl výběr</title>
+  <style>
+    body {
+      background: #111;
+      color: white;
+      text-align: center;
+      font-family: Arial;
+    }
+
+    h1 {
+      margin-top: 20px;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 40px;
+    }
+
+    .item {
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .item:hover {
+      transform: scale(1.05);
+    }
+
+    img {
+      width: 220px;
+      height: 300px;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+
+    .selected {
+      box-shadow: 0 0 20px gold;
+      transform: scale(1.08);
+    }
+
+    #skipBtn {
+      margin-top: 25px;
+      padding: 12px 28px;
+      font-size: 18px;
+      background: #2a2a2a;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #skipBtn:hover {
+      background: #3a3a3a;
+      transform: scale(1.05);
+    }
+
+    #skipBtn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Koho radši?</h1>
+
+<div class="container">
+  <div class="item" id="item0" onclick="choose(0)">
+    <img id="img0">
+    <p id="name0"></p>
+  </div>
+
+  <div class="item" id="item1" onclick="choose(1)">
+    <img id="img1">
+    <p id="name1"></p>
+  </div>
+</div>
+
+<button id="skipBtn" onclick="skipMatch()">Přeskočit (3)</button>
+
+<script>
+const data = [
+  { name: "Aelin", img: "images/Aelin.jpg" },
+  { name: "Amarantha", img: "images/Amarantha.jpg" },
+  { name: "Amren", img: "images/Amren.jpg" },
+  { name: "Ansel", img: "images/Ansel.jpg" },
+  { name: "Asterin", img: "images/Asterin.jpg" },
+  { name: "Bryce", img: "images/Bryce.jpg" },
+  { name: "Danika", img: "images/Danika.jpg" },
+  { name: "Elain", img: "images/Elain.jpg" },
+  { name: "Elide", img: "images/Elide.jpg" },
+  { name: "Evangeline", img: "images/Evangeline.jpg" },
+  { name: "Feyre", img: "images/Feyre.jpg" },
+  { name: "Gwyn", img: "images/Gwyn.jpg" },
+  { name: "Hypaxia", img: "images/Hypaxia.jpg" },
+  { name: "Juniper", img: "images/Juniper.jpg" },
+  { name: "Kaltain", img: "images/Kaltain.jpg" },
+  { name: "Lehabah", img: "images/Lehabah.jpg" },
+  { name: "Lidia", img: "images/Lidia.jpg" },
+  { name: "Lysandra", img: "images/Lysandra.jpg" },
+  { name: "Maeve", img: "images/Maeve.jpg" },
+  { name: "Manon", img: "images/Manon.jpg" },
+  { name: "Morrigan", img: "images/Morrigan.jpg" },
+  { name: "Nehemiah", img: "images/Nehemiah.jpg" },
+  { name: "Nesryn", img: "images/Nesryn.jpg" },
+  { name: "Nesta", img: "images/Nesta.jpg" },
+  { name: "Paedyn", img: "images/Paedyn.jpg" },
+  { name: "Rhiannon", img: "images/Rhiannon.jpg" },
+  { name: "Sabine", img: "images/Sabine.jpg" },
+  { name: "Saeris", img: "images/Saeris.jpg" },
+  { name: "Vesta", img: "images/Vesta.jpg" },
+  { name: "Violet", img: "images/Violet.jpg" },
+  { name: "Yrene", img: "images/Yrene.jpg" },
+  { name: "Zmije", img: "images/Zmije.jpg" }
+];
+
+let currentRound = [];
+let nextRound = [];
+let currentPair = [];
+
+let history = [];
+let roundNumber = 1;
+
+let skipsLeft = 3;
+let bannedPairs = [];
+
+function shuffle(array) {
+  return array.sort(() => Math.random() - 0.5);
+}
+
+function pairKey(a, b) {
+  return [a, b].sort().join("|");
+}
+
+function updateSkipUI() {
+  let btn = document.getElementById("skipBtn");
+  btn.innerText = "Přeskočit (" + skipsLeft + ")";
+  if (skipsLeft <= 0) btn.disabled = true;
+}
+
+function startTournament() {
+  currentRound = shuffle([...data]);
+  nextRound = [];
+  history = [];
+  roundNumber = 1;
+  skipsLeft = 3;
+  bannedPairs = [];
+  updateSkipUI();
+  nextPair();
+}
+
+function nextPair() {
+  if (currentRound.length === 1 && nextRound.length === 0) {
+    showWinner(currentRound[0]);
+    return;
+  }
+
+  if (currentRound.length < 2) {
+    currentRound = nextRound;
+    nextRound = [];
+    roundNumber++;
+    nextPair();
+    return;
+  }
+
+  let tries = 0;
+
+  do {
+    let a = currentRound.pop();
+    let b = currentRound.pop();
+
+    if (!b) {
+      nextRound.push(a);
+      nextPair();
+      return;
+    }
+
+    let key = pairKey(a.name, b.name);
+
+    if (!bannedPairs.includes(key) || (currentRound.length + nextRound.length <= 2)) {
+      currentPair = [a, b];
+      update();
+      return;
+    } else {
+      currentRound.unshift(a, b);
+      shuffle(currentRound);
+    }
+
+    tries++;
+  } while (tries < 50);
+}
+
+function update() {
+  img0.src = currentPair[0].img;
+  name0.innerText = currentPair[0].name;
+
+  img1.src = currentPair[1].img;
+  name1.innerText = currentPair[1].name;
+}
+
+function choose(index) {
+  let winner = currentPair[index];
+
+  history.push({
+    round: roundNumber,
+    player1: currentPair[0].name,
+    player2: currentPair[1].name,
+    winner: winner.name
+  });
+
+  document.getElementById("item" + index).classList.add("selected");
+
+  setTimeout(() => {
+    document.getElementById("item" + index).classList.remove("selected");
+    nextRound.push(winner);
+    nextPair();
+  }, 200);
+}
+
+function skipMatch() {
+  if (skipsLeft <= 0) return;
+
+  let a = currentPair[0];
+  let b = currentPair[1];
+
+  bannedPairs.push(pairKey(a.name, b.name));
+  skipsLeft--;
+  updateSkipUI();
+
+  nextRound.push(a);
+  nextRound.push(b);
+
+  nextPair();
+}
+
+function showWinner(winner) {
+  let grouped = {};
+
+  function getImg(name) {
+    let found = data.find(p => p.name === name);
+    return found ? found.img : "";
+  }
+
+  history.forEach(match => {
+    if (!grouped[match.round]) grouped[match.round] = [];
+    grouped[match.round].push(match);
+  });
+
+  let rounds = Object.keys(grouped)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  let bracketHTML = `
+    <div style="
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      gap:60px;
+      margin-top:40px;
+    ">
+  `;
+
+  rounds.forEach((round, i) => {
+
+    // 👇 TADY JE TEN KLÍČ
+    let spacing = Math.pow(2, i) * 10;
+
+    bracketHTML += `
+      <div style="
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+      ">
+        <h3>Kolo ${round}</h3>
+    `;
+
+    grouped[round].forEach((match, index) => {
+
+      bracketHTML += `
+        <div style="
+          background:#222;
+          padding:10px;
+          margin:${spacing}px 0;
+          border-radius:10px;
+          width:160px;
+        ">
+          
+          <div style="display:flex; align-items:center; gap:6px;">
+            <img src="${getImg(match.player1)}" style="width:35px; height:45px; object-fit:cover; border-radius:5px;">
+            <span>${match.player1}</span>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:6px; margin-top:5px;">
+            <img src="${getImg(match.player2)}" style="width:35px; height:45px; object-fit:cover; border-radius:5px;">
+            <span>${match.player2}</span>
+          </div>
+
+          <div style="
+            margin-top:6px;
+            border:2px solid gold;
+            border-radius:6px;
+            padding:3px;
+            color:gold;
+            font-weight:bold;
+            text-align:center;
+          ">
+            👑 ${match.winner}
+          </div>
+
+        </div>
+      `;
+    });
+
+    bracketHTML += `</div>`;
+  });
+
+  bracketHTML += `</div>`;
+
+  document.body.innerHTML = `
+    <h1>👑 HIGH LADY WINNER 👑</h1>
+    <img src="${winner.img}" style="width:250px; border-radius:15px;">
+    <h2>${winner.name}</h2>
+    ${bracketHTML}
+    <br>
+    <button onclick="location.reload()">Hrát znovu</button>
+  `;
+}
+
+startTournament();
+</script>
+
+</body>
+</html>
