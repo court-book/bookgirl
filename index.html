@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<title>Book Battle</title>
+
+<style>
+body { background:#111; color:white; text-align:center; font-family:Arial; }
+
+.container {
+  display:flex;
+  justify-content:center;
+  gap:40px;
+  margin-top:40px;
+}
+
+.item { cursor:pointer; }
+.item:hover { transform:scale(1.05); }
+
+img.main {
+  width:220px;
+  height:300px;
+  object-fit:cover;
+  border-radius:12px;
+}
+
+button {
+  margin:15px;
+  padding:10px 20px;
+  background:#333;
+  color:white;
+  border:none;
+  border-radius:8px;
+}
+
+.bracket {
+  display:flex;
+  justify-content:center;
+  gap:40px;
+  margin-top:60px;
+}
+
+.round { display:flex; flex-direction:column; gap:12px; }
+
+.match {
+  background:#222;
+  padding:8px;
+  border-radius:8px;
+  width:170px;
+}
+
+.player { display:flex; align-items:center; gap:6px; }
+.player img { width:36px; height:50px; }
+
+.winner { border:2px solid gold; }
+</style>
+</head>
+
+<body>
+
+<h1>Koho radši 😏</h1>
+<h2 id="roundInfo">Kolo 1</h2>
+
+<div class="container" id="game"></div>
+
+<button id="skipBtn" onclick="skip()">Přeskočit (3)</button>
+
+<script>
+
+// ===== DATA =====
+const originalCharacters = [
+  "images/Aelin.jpg",
+  "images/Amarantha.jpg",
+  "images/Amren.jpg",
+  "images/Ansel.jpg",
+  "images/Asterin.jpg",
+  "images/Bryce.jpg",
+  "images/Danika.jpg",
+  "images/Elain.jpg",
+  "images/Elide.jpg",
+  "images/Evangeline.jpg",
+  "images/Feyre.jpg",
+  "images/Gwyn.jpg",
+  "images/Hypaxia.jpg",
+  "images/Juniper.jpg",
+  "images/Kaltain.jpg",
+  "images/Lehabah.jpg",
+  "images/Lidia.jpg",
+  "images/Lysandra.jpg",
+  "images/Maeve.jpg",
+  "images/Manon.jpg",
+  "images/Morrigan.jpg",
+  "images/Nehemiah.jpg",
+  "images/Nesryn.jpg",
+  "images/Nesta.jpg",
+  "images/Paedyn.jpg",
+  "images/Rhiannon.jpg",
+  "images/Sabine.jpg",
+  "images/Saeris.jpg",
+  "images/Vesta.jpg",
+  "images/Violet.jpg",
+  "images/Yrene.jpg",
+  "images/Zmije.jpg"
+];
+
+let players = originalCharacters.map(p => ({
+  name: p.split("/").pop().replace(".jpg","").replace(/_/g," "),
+  img: p
+}));
+
+// ===== GAME =====
+let roundPlayers = shuffle([...players]);
+let nextRoundPlayers = [];
+let pair = [];
+
+let rounds = [];
+let matches = [];
+
+let roundNumber = 1;
+let skips = 3;
+
+let final3Mode = false;
+let final3Players = [];
+
+function shuffle(a){ return a.sort(()=>Math.random()-0.5); }
+
+// ===== START =====
+function startRound(){
+  document.getElementById("roundInfo").innerText = "Kolo " + roundNumber;
+  nextMatch();
+}
+
+// ===== FLOW =====
+function nextMatch(){
+
+  // 🔥 FINAL 3 NA KONCI KOLA
+  if(roundPlayers.length === 3){
+    final3Mode = true;
+    final3Players = [...roundPlayers];
+    roundPlayers = [];
+    renderFinal3();
+    return;
+  }
+
+  // 🔥 konec kola
+  if(roundPlayers.length === 0){
+
+    rounds.push(matches);
+    matches = [];
+
+    if(nextRoundPlayers.length === 1){
+      showWinner(nextRoundPlayers[0]);
+      return;
+    }
+
+    roundPlayers = shuffle(nextRoundPlayers);
+    nextRoundPlayers = [];
+    roundNumber++;
+
+    startRound();
+    return;
+  }
+
+  // 🔥 duel
+  pair = [roundPlayers.shift(), roundPlayers.shift()];
+  renderPair();
+}
+
+// ===== RENDER DUEL =====
+function renderPair(){
+
+  const game = document.getElementById("game");
+  game.innerHTML = "";
+
+  pair.forEach((p,i)=>{
+    let div = document.createElement("div");
+    div.className = "item";
+
+    div.innerHTML = `
+      <img class="main" src="${p.img}">
+      <p>${p.name}</p>
+    `;
+
+    div.onclick = ()=>choose(i);
+
+    game.appendChild(div);
+  });
+
+  document.getElementById("skipBtn").style.display = "inline-block";
+}
+
+// ===== FINAL 3 =====
+function renderFinal3(){
+
+  const game = document.getElementById("game");
+  game.innerHTML = "";
+
+  final3Players.forEach(p=>{
+    let div = document.createElement("div");
+    div.className = "item";
+
+    div.innerHTML = `
+      <img class="main" src="${p.img}">
+      <p>${p.name}</p>
+    `;
+
+    div.onclick = ()=>chooseFinal3(p);
+
+    game.appendChild(div);
+  });
+
+  document.getElementById("skipBtn").style.display = "none";
+}
+
+// ===== FINAL3 CHOICE =====
+function chooseFinal3(p){
+
+  matches.push({
+    type:"final3",
+    players:final3Players,
+    winner:p
+  });
+
+  nextRoundPlayers.push(p);
+
+  final3Mode = false;
+
+  nextMatch();
+}
+
+// ===== CHOOSE =====
+function choose(i){
+
+  let winner = pair[i];
+
+  matches.push({
+    type:"normal",
+    p1:pair[0],
+    p2:pair[1],
+    winner
+  });
+
+  nextRoundPlayers.push(winner);
+
+  nextMatch();
+}
+
+// ===== SKIP =====
+function skip(){
+
+  if(skips<=0) return;
+
+  skips--;
+  document.getElementById("skipBtn").innerText = `Přeskočit (${skips})`;
+
+  nextRoundPlayers.push(...pair);
+
+  nextMatch();
+}
+
+// ===== RESULT =====
+function showWinner(winner){
+
+  let html = `
+    <h1>👑 ${winner.name}</h1>
+    <img src="${winner.img}" style="width:200px;border-radius:12px;">
+  `;
+
+  html += `<div class="bracket">`;
+
+  rounds.forEach(r=>{
+    html += `<div class="round">`;
+
+    r.forEach(m=>{
+
+      if(m.type==="final3"){
+        html += `<div class="match">` +
+        m.players.map(p=>`
+          <div class="player ${m.winner===p?"winner":""}">
+            <img src="${p.img}">${p.name}
+          </div>`).join("") +
+        `</div>`;
+      }
+
+      else{
+        html += `
+        <div class="match">
+          <div class="player ${m.winner===m.p1?"winner":""}">
+            <img src="${m.p1.img}">${m.p1.name}
+          </div>
+          <div class="player ${m.winner===m.p2?"winner":""}">
+            <img src="${m.p2.img}">${m.p2.name}
+          </div>
+        </div>`;
+      }
+
+    });
+
+    html += `</div>`;
+  });
+
+  html += `</div>`;
+
+  // 🔥 TADY JE TEN FIX
+  html += `
+    <br><br>
+    <button onclick="location.reload()">🔁 Hrát znovu</button>
+  `;
+
+  document.body.innerHTML = html;
+}
+
+// START
+startRound();
+
+</script>
+</body>
+</html>
